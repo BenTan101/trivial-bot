@@ -1,92 +1,92 @@
-import os
-import sys
-
 # Flask
-from flask import Flask, redirect, url_for, request, render_template, Response, jsonify, redirect
-from werkzeug.utils import secure_filename
-from gevent.pywsgi import WSGIServer
-
-# TensorFlow and tf.keras
-import tensorflow as tf
-from tensorflow import keras
-
-from tensorflow.keras.applications.imagenet_utils import preprocess_input, decode_predictions
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
-
 # Some utilites
-import numpy as np
-from util import base64_to_pil
+import re
 
+import numpy as np
+from flask import Flask, request, render_template
+from gevent.pywsgi import WSGIServer
+from keras.models import model_from_json
+from nltk.corpus import stopwords
+from sentence_transformers import SentenceTransformer
+
+# TODO: jk just reference https://analyticsarora.com/how-to-make-a-flask-web-app-for-keras-model/
+# Compile to exe: https://elc.github.io/posts/executable-flask-pyinstaller/
 
 # Declare a flask app
 app = Flask(__name__)
 
+specter_model = SentenceTransformer("allenai-specter")
+bert_model = SentenceTransformer("bert-base-nli-mean-tokens")
 
-# You can use pretrained model from Keras
-# Check https://keras.io/applications/
-# or https://www.tensorflow.org/api_docs/python/tf/keras/applications
+json_file = open("spectermodel.json", "r")
+spectermodel_json = json_file.read()
+json_file.close()
+specter_keras_model = model_from_json(spectermodel_json)
+specter_keras_model.load_weights("spectermodel.h5")
 
-from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
-model = MobileNetV2(weights='imagenet')
+json_file = open("bertmodel.json", "r")
+bertmodel_json = json_file.read()
+json_file.close()
+bert_keras_model = model_from_json(bertmodel_json)
+bert_keras_model.load_weights("bertmodel.h5")
 
-print('Model loaded. Check http://127.0.0.1:5000/')
-
-
-# Model saved with Keras model.save()
-MODEL_PATH = 'models/your_model.h5'
-
-# Load your own trained model
-# model = load_model(MODEL_PATH)
-# model._make_predict_function()          # Necessary
-# print('Model loaded. Start serving...')
+print('Go to http://127.0.0.1:5000/')
 
 
-def model_predict(img, model):
-    img = img.resize((224, 224))
+@app.route('/response', methods=['POST'])
+def response():
+    model_name = request.form['action']
+    if model_name == 'allenai-specter':
+        model = specter_model
+        keras_model = specter_keras_model
+    else:
+        model = bert_model
+        keras_model = bert_keras_model
 
-    # Preprocessing the image
-    x = image.img_to_array(img)
-    # x = np.true_divide(x, 255)
-    x = np.expand_dims(x, axis=0)
+    text = request.form.get("text")
+    sentences = []
+    keywords = []
 
-    # Be careful how your trained model deals with the input
-    # otherwise, it won't make correct prediction!
-    x = preprocess_input(x, mode='tf')
+    for sentence in text.split('.'):
+        if sentence == '':
+            continue
 
-    preds = model.predict(x)
-    return preds
+        sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
+        sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
+        sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence)
+
+        mod_sentence = re.sub(
+            "|".join(
+                np.append(
+                    np.char.add(
+                        np.char.add(" ", np.array(stopwords.words("english"))), " "
+                    ),
+                    ", ",
+                )
+            ),
+            " ",
+            re.sub(" ", "  ", " " + sentence + " "),
+        )
+
+        mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
+        encoded = model.encode(mod_sentence)
+
+        sentences += [sentence]
+        keywords += [mod_sentence.split(" ")[
+                         round(keras_model.predict(np.array([encoded]))[0][0])
+                     ]]
+
+    merged = ""
+    for i in zip(sentences, keywords):
+        merged += "sentence: " + i[0] + "\nkeyword: " + i[1] + "\n\n\n"
+
+    return render_template("index.html", text=text, model=model_name, keywords=merged)
 
 
 @app.route('/', methods=['GET'])
 def index():
     # Main page
     return render_template('index.html')
-
-
-@app.route('/predict', methods=['GET', 'POST'])
-def predict():
-    if request.method == 'POST':
-        # Get the image from post request
-        img = base64_to_pil(request.json)
-
-        # Save the image to ./uploads
-        # img.save("./uploads/image.png")
-
-        # Make prediction
-        preds = model_predict(img, model)
-
-        # Process your result for human
-        pred_proba = "{:.3f}".format(np.amax(preds))    # Max probability
-        pred_class = decode_predictions(preds, top=1)   # ImageNet Decode
-
-        result = str(pred_class[0][0][1])               # Convert to string
-        result = result.replace('_', ' ').capitalize()
-        
-        # Serialize the result, you can add additional fields
-        return jsonify(result=result, probability=pred_proba)
-
-    return None
 
 
 if __name__ == '__main__':
