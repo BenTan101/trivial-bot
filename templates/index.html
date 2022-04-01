@@ -9,13 +9,12 @@
             <input class="field" name="text">
             <input class="button" name="action" type="submit" value="allenai-specter">
             <input class="button" name="action" type="submit" value="bert-base-nli-mean-tokens">
+            <input class="both-button" name="action" type="submit" value="both!">
         </form>
         {% if text %}
         <h4>Text</h4>
         <p>{{ text }}</p>
-        <h4>Model</h4>
-        <p>{{ model }}</p>
-        <h4>Keywords</h4>
+        <h4>Keywords ({{ model }})</h4>
         <p style="white-space: pre-wrap">{{ keywords }}</p>
         {% endif %}
     </div>

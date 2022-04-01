@@ -3,7 +3,7 @@ body {
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   -webkit-font-smoothing: antialiased;
   background-color: #e1ebfc;
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto !important;
 }
 
@@ -28,6 +28,15 @@ input {
 
 .button:hover {
   background-color: rgb(16, 110, 190);
+}
+
+.both-button {
+    color: #ffffff;
+    background-color: rgb(212, 124, 0);
+}
+
+.both-button:hover {
+  background-color: rgb(194, 120, 17);
 }
 
 /* Main section */

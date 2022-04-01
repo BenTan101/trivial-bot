@@ -1,5 +1,3 @@
-# Flask
-# Some utilites
 import re
 
 import numpy as np
@@ -36,49 +34,93 @@ print('Go to http://127.0.0.1:5000/')
 @app.route('/response', methods=['POST'])
 def response():
     model_name = request.form['action']
-    if model_name == 'allenai-specter':
-        model = specter_model
-        keras_model = specter_keras_model
-    else:
-        model = bert_model
-        keras_model = bert_keras_model
-
     text = request.form.get("text")
-    sentences = []
-    keywords = []
 
-    for sentence in text.split('.'):
-        if sentence == '':
-            continue
+    if model_name == 'both!':
+        sentences = []
+        specter_keywords = []
+        bert_keywords = []
 
-        sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
-        sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
-        sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence)
+        for sentence in text.split('.'):
+            if sentence == '':
+                continue
 
-        mod_sentence = re.sub(
-            "|".join(
-                np.append(
-                    np.char.add(
-                        np.char.add(" ", np.array(stopwords.words("english"))), " "
-                    ),
-                    ", ",
-                )
-            ),
-            " ",
-            re.sub(" ", "  ", " " + sentence + " "),
-        )
+            sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
+            sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
+            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence)
 
-        mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
-        encoded = model.encode(mod_sentence)
+            mod_sentence = re.sub(
+                "|".join(
+                    np.append(
+                        np.char.add(
+                            np.char.add(" ", np.array(stopwords.words("english"))), " "
+                        ),
+                        ", ",
+                    )
+                ),
+                " ",
+                re.sub(" ", "  ", " " + sentence + " "),
+            )
 
-        sentences += [sentence]
-        keywords += [mod_sentence.split(" ")[
-                         round(keras_model.predict(np.array([encoded]))[0][0])
-                     ]]
+            mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
 
-    merged = ""
-    for i in zip(sentences, keywords):
-        merged += "sentence: " + i[0] + "\nkeyword: " + i[1] + "\n\n\n"
+            specter_encoded = specter_model.encode(mod_sentence)
+            bert_encoded = bert_model.encode(mod_sentence)
+
+            sentences += [sentence]
+            specter_keywords += [mod_sentence.split(" ")[
+                                     round(specter_keras_model.predict(np.array([specter_encoded]))[0][0])
+                                 ]]
+            bert_keywords += [mod_sentence.split(" ")[
+                                  round(bert_keras_model.predict(np.array([bert_encoded]))[0][0])
+                              ]]
+
+        merged = ""
+        for i in zip(sentences, specter_keywords, bert_keywords):
+            merged += "sentence: " + i[0] + "\nspecter keyword: " + i[1] + "\nbert keyword: " + i[2] + "\n\n\n"
+    else:
+        if model_name == 'allenai-specter':
+            model = specter_model
+            keras_model = specter_keras_model
+        elif model_name == 'bert-base-nli-mean-tokens':
+            model = bert_model
+            keras_model = bert_keras_model
+
+        sentences = []
+        keywords = []
+
+        for sentence in text.split('.'):
+            if sentence == '':
+                continue
+
+            sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
+            sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
+            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence)
+
+            mod_sentence = re.sub(
+                "|".join(
+                    np.append(
+                        np.char.add(
+                            np.char.add(" ", np.array(stopwords.words("english"))), " "
+                        ),
+                        ", ",
+                    )
+                ),
+                " ",
+                re.sub(" ", "  ", " " + sentence + " "),
+            )
+
+            mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
+            encoded = model.encode(mod_sentence)
+
+            sentences += [sentence]
+            keywords += [mod_sentence.split(" ")[
+                             round(keras_model.predict(np.array([encoded]))[0][0])
+                         ]]
+
+        merged = ""
+        for i in zip(sentences, keywords):
+            merged += "sentence: " + i[0] + "\nkeyword: " + i[1] + "\n\n\n"
 
     return render_template("index.html", text=text, model=model_name, keywords=merged)
 
