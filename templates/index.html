@@ -6,11 +6,18 @@
     </div>
     <div class="panel">
         <form action="/response" method="POST">
-            <input class="field" name="text">
-            <input class="button" name="action" type="submit" value="allenai-specter">
-            <input class="button" name="action" type="submit" value="bert-base-nli-mean-tokens">
-            <input class="both-button" name="action" type="submit" value="both!">
+            <input class="field" name="text" placeholder="Enter some text…">
+            <input class="button" name="action" style="margin-top: 4px;" type="submit" value="allenai-specter">
+            <input class="button" name="action" style="margin-top: 4px;" type="submit"
+                   value="bert-base-nli-mean-tokens">
+            <input class="button" name="action" style="margin-top: 4px;" type="submit"
+                   value="allenai-specter (classification)">
+            <input class="button" name="action" style="margin-top: 4px;" type="submit"
+                   value="bert-base-nli-mean-tokens (classification)">
+            <input class="all-button" name="action" type="submit" value="compare all!" style="margin-top: 4px;">
         </form>
+    </div>
+    <div>
         {% if text %}
         <h4>Text</h4>
         <p>{{ text }}</p>

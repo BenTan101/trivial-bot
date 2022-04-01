@@ -9,6 +9,7 @@ body {
 
 /* Global button style */
 input {
+  display: block;
   font-family: inherit;
   text-align: center;
   cursor: pointer;
@@ -22,21 +23,21 @@ input {
 }
 
 .button {
-    color: #ffffff;
-    background-color: rgb(0, 120, 212);
+    color: rgb(0, 120, 212);
+    background-color: #ffffff00;
 }
 
 .button:hover {
-  background-color: rgb(16, 110, 190);
+  background-color: #0078d422;
 }
 
-.both-button {
-    color: #ffffff;
-    background-color: rgb(212, 124, 0);
+.all-button {
+    color: rgb(212, 124, 0);
+    background-color: #ffffff00;
 }
 
-.both-button:hover {
-  background-color: rgb(194, 120, 17);
+.all-button:hover {
+  background-color: #d47c0022;
 }
 
 /* Main section */
