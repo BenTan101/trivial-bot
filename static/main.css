@@ -11,7 +11,7 @@ body {
 input {
   display: block;
   font-family: inherit;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
   border: none;
   text-decoration: none;
@@ -20,6 +20,14 @@ input {
   border-radius: 2px;
   font-size: 1rem;
   min-width: 6rem;
+}
+
+::-webkit-input-placeholder {
+  text-align: left;
+}
+
+:-moz-placeholder {
+  text-align: left;
 }
 
 .button {
