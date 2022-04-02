@@ -155,7 +155,8 @@ def response():
 
         merged = ""
         for i in zip(sentences, keywords):
-            merged += "sentence: " + i[0] + "\nkeyword: " + i[1] + "\n\n\n"
+            merged += "question: " + i[0].replace(" " + i[1] + " ", " " + "_" * 10 + " ") + \
+                      "\nkeyword: " + i[1] + "\n\n\n"
 
     return render_template("index.html", text=text, model=model_name, keywords=merged)
 
