@@ -56,12 +56,12 @@ def response():
         bert_classification_keywords = []
 
         for sentence in text.split('.'):
-            if sentence == '':
+            if sentence == "" or sentence.isspace() or sentence.strip().isnumeric():
                 continue
 
             sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
             sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
-            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence)
+            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence).strip()
 
             mod_sentence = re.sub(
                 "|".join(
@@ -122,12 +122,12 @@ def response():
         keywords = []
 
         for sentence in text.split('.'):
-            if sentence == '':
+            if sentence == "" or sentence.isspace() or sentence.strip().isnumeric():
                 continue
 
             sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
             sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
-            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence)
+            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence).strip()
 
             mod_sentence = re.sub(
                 "|".join(
