@@ -1,11 +1,19 @@
 import re
 
 import numpy as np
+import pandas as pd
 from flask import Flask, request, render_template
 from gevent.pywsgi import WSGIServer
 from keras.models import model_from_json
+import nltk
+from nltk.data import load
 from nltk.corpus import stopwords
 from sentence_transformers import SentenceTransformer
+
+nltk.download("stopwords")
+nltk.download("punkt")
+nltk.download("averaged_perceptron_tagger")
+nltk.download("tagsets")
 
 # TODO: jk just reference https://analyticsarora.com/how-to-make-a-flask-web-app-for-keras-model/
 # Compile to exe: https://elc.github.io/posts/executable-flask-pyinstaller/
@@ -40,6 +48,13 @@ json_file.close()
 bert_classification_keras_model = model_from_json(bertmodel_classification_json)
 bert_classification_keras_model.load_weights("bertmodel_classification.h5")
 
+json_file = open("posmodel.json", "r")
+pos_json = json_file.read()
+json_file.close()
+pos_keras_model = model_from_json(pos_json)
+pos_keras_model.load_weights("posmodel.h5")
+possible_tags = list(load("help/tagsets/upenn_tagset.pickle").keys())
+
 print('Go to http://127.0.0.1:5000/')
 
 
@@ -54,6 +69,7 @@ def response():
         bert_keywords = []
         specter_classification_keywords = []
         bert_classification_keywords = []
+        pos_keywords = []
 
         for sentence in text.split('.'):
             if sentence == "" or sentence.isspace() or sentence.strip().isnumeric():
@@ -64,17 +80,8 @@ def response():
             sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence).strip()
 
             mod_sentence = re.sub(
-                "|".join(
-                    np.append(
-                        np.char.add(
-                            np.char.add(" ", np.array(stopwords.words("english"))), " "
-                        ),
-                        ", ",
-                    )
-                ),
-                " ",
-                re.sub(" ", "  ", " " + sentence + " "),
-            )
+                "|".join(np.append(np.char.add(np.char.add(" ", np.array(stopwords.words("english"))), " "), ", ", )),
+                " ", re.sub(" ", "  ", " " + sentence + " "), )
 
             mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
 
@@ -82,32 +89,36 @@ def response():
             bert_encoded = bert_model.encode(mod_sentence)
 
             sentences += [sentence]
-            specter_keywords += [mod_sentence.split(" ")[
-                                     round(specter_keras_model.predict(np.array([specter_encoded]))[0][0])
-                                 ]]
-            bert_keywords += [mod_sentence.split(" ")[
-                                  round(bert_keras_model.predict(np.array([bert_encoded]))[0][0])
-                              ]]
-            specter_classification_keywords += [mod_sentence.split(" ")[
-                                                    min(np.argmax(specter_classification_keras_model.predict(
-                                                        np.array([specter_encoded]))[0]),
-                                                        len(mod_sentence.split(" ")) - 1,
-                                                        )
-                                                ]]
-            bert_classification_keywords += [mod_sentence.split(" ")[
-                                                 min(np.argmax(
-                                                     bert_classification_keras_model.predict(np.array([bert_encoded]))[
-                                                         0]),
-                                                     len(mod_sentence.split(" ")) - 1,
-                                                 )
-                                             ]]
+            specter_keywords += [
+                mod_sentence.split(" ")[round(specter_keras_model.predict(np.array([specter_encoded]))[0][0])]]
+            bert_keywords += [mod_sentence.split(" ")[round(bert_keras_model.predict(np.array([bert_encoded]))[0][0])]]
+            specter_classification_keywords += [mod_sentence.split(" ")[min(np.argmax(
+                specter_classification_keras_model.predict(np.array([specter_encoded]))[0]),
+                len(mod_sentence.split(" ")) - 1, )]]
+            bert_classification_keywords += [mod_sentence.split(" ")[min(np.argmax(
+                bert_classification_keras_model.predict(np.array([bert_encoded]))[0]),
+                len(mod_sentence.split(" ")) - 1, )]]
+
+            tags = np.array(nltk.pos_tag(nltk.word_tokenize(sentence)))[:, 1]
+            dummies = pd.get_dummies(tags)
+
+            for i in possible_tags:
+                if i not in dummies.columns:
+                    dummies[i] = 0
+
+            dummies = dummies.reindex(sorted(dummies.columns), axis=1)
+            dummies = dummies.to_numpy()
+            dummies = np.vstack((dummies, np.zeros((200 - dummies.shape[0], len(possible_tags)))))
+
+            pos_keywords += [sentence.split(" ")[min(np.argmax(pos_keras_model.predict(np.array([dummies]))[0]),
+                                                     len(sentence.split(" ")) - 1, )]]
 
         merged = ""
         for i in zip(sentences, specter_keywords, bert_keywords, specter_classification_keywords,
-                     bert_classification_keywords):
+                     bert_classification_keywords, pos_keywords):
             merged += "sentence: " + i[0] + "\nspecter keyword: " + i[1] + "\nbert keyword: " + i[
                 2] + "\nspecter (classification) keyword: " + i[3] + "\nbert (classification) keyword: " + i[
-                          4] + "\n\n\n"
+                          4] + "\npos tagging keyword: " + i[5] + "\n\n\n"
     else:
         is_classification = 'classification' in model_name
 
@@ -117,6 +128,8 @@ def response():
         elif 'bert-base-nli-mean-tokens' in model_name:
             model = bert_model
             keras_model = bert_classification_keras_model if is_classification else bert_keras_model
+        else:
+            keras_model = pos_keras_model
 
         sentences = []
         keywords = []
@@ -129,34 +142,38 @@ def response():
             sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
             sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence).strip()
 
-            mod_sentence = re.sub(
-                "|".join(
-                    np.append(
-                        np.char.add(
-                            np.char.add(" ", np.array(stopwords.words("english"))), " "
-                        ),
-                        ", ",
-                    )
-                ),
-                " ",
-                re.sub(" ", "  ", " " + sentence + " "),
-            )
+            if model_name != "part-of-speech tagging":
+                mod_sentence = re.sub("|".join(
+                    np.append(np.char.add(np.char.add(" ", np.array(stopwords.words("english"))), " "), ", ", )), " ",
+                    re.sub(" ", "  ", " " + sentence + " "), )
 
-            mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
-            encoded = model.encode(mod_sentence)
+                mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
+                encoded = model.encode(mod_sentence)
 
-            sentences += [sentence]
-            keywords += [mod_sentence.split(" ")[
-                             min(np.argmax(keras_model.predict(np.array([encoded]))[0]),
-                                 len(mod_sentence.split(" ")) - 1,
-                                 )
-                         ]] if is_classification else [
-                mod_sentence.split(" ")[round(keras_model.predict(np.array([encoded]))[0][0])]]
+                sentences += [sentence]
+                keywords += [mod_sentence.split(" ")[min(np.argmax(keras_model.predict(np.array([encoded]))[0]),
+                                                         len(mod_sentence.split(" ")) - 1)]] if is_classification else [
+                    mod_sentence.split(" ")[round(keras_model.predict(np.array([encoded]))[0][0])]]
+            else:
+                tags = np.array(nltk.pos_tag(nltk.word_tokenize(sentence)))[:, 1]
+                dummies = pd.get_dummies(tags)
+
+                for i in possible_tags:
+                    if i not in dummies.columns:
+                        dummies[i] = 0
+
+                dummies = dummies.reindex(sorted(dummies.columns), axis=1)
+                dummies = dummies.to_numpy()
+                dummies = np.vstack((dummies, np.zeros((200 - dummies.shape[0], len(possible_tags)))))
+
+                sentences += [sentence]
+                keywords += [sentence.split(" ")[min(np.argmax(pos_keras_model.predict(np.array([dummies]))[0]),
+                                                     len(sentence.split(" ")) - 1)]]
 
         merged = ""
         for i in zip(sentences, keywords):
-            merged += "question: " + i[0].replace(" " + i[1] + " ", " " + "_" * 10 + " ") + \
-                      "\nkeyword: " + i[1] + "\n\n\n"
+            merged += "question: " + (" " + i[0] + " ").replace(" " + i[1] + " ",
+                                                                " " + "_" * 10 + " ") + "\nkeyword: " + i[1] + "\n\n\n"
 
     return render_template("index.html", text=text, model=model_name, keywords=merged)
 
