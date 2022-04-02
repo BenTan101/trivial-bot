@@ -77,7 +77,7 @@ def response():
 
             sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
             sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
-            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence).strip()
+            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’“”…]+", "", sentence).strip()
 
             mod_sentence = re.sub(
                 "|".join(np.append(np.char.add(np.char.add(" ", np.array(stopwords.words("english"))), " "), ", ", )),
