@@ -1,4 +1,6 @@
+import operator
 import re
+import string
 
 import numpy as np
 import pandas as pd
@@ -14,9 +16,6 @@ nltk.download("stopwords")
 nltk.download("punkt")
 nltk.download("averaged_perceptron_tagger")
 nltk.download("tagsets")
-
-# TODO: jk just reference https://analyticsarora.com/how-to-make-a-flask-web-app-for-keras-model/
-# Compile to exe: https://elc.github.io/posts/executable-flask-pyinstaller/
 
 # Declare a flask app
 app = Flask(__name__)
@@ -60,122 +59,92 @@ print('Go to http://127.0.0.1:5000/')
 
 @app.route('/response', methods=['POST'])
 def response():
-    model_name = request.form['action']
     text = request.form.get("text")
 
-    if model_name == 'compare all!':
-        sentences = []
-        specter_keywords = []
-        bert_keywords = []
-        specter_classification_keywords = []
-        bert_classification_keywords = []
-        pos_keywords = []
+    sentences = []
+    specter_keywords = []
+    bert_keywords = []
+    specter_classification_keywords = []
+    bert_classification_keywords = []
+    pos_keywords = []
 
-        for sentence in text.split('.'):
-            if sentence == "" or sentence.isspace() or sentence.strip().isnumeric():
-                continue
+    mod_text = re.sub("\\((.*?)\\)", " ", text)
+    mod_text = re.sub("\\[(.*?)\\]", " ", mod_text)
+    mod_text = re.sub("\\s{2,}", " ", mod_text)
 
-            sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
-            sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
-            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’“”…]+", "", sentence).strip()
+    for sentence in mod_text.split('.'):
+        if sentence == "" or sentence.isspace() or sentence.strip().isnumeric() or sentence is None:
+            continue
 
-            mod_sentence = re.sub(
-                "|".join(np.append(np.char.add(np.char.add(" ", np.array(stopwords.words("english"))), " "), ", ", )),
-                " ", re.sub(" ", "  ", " " + sentence + " "), )
+        # sentence = re.sub("\\((.*?)\\)", " ", sentence)
+        # sentence = re.sub("\\[(.*?)\\]", " ", sentence)
+        # sentence = re.sub("\\s{2,}", " ", sentence)
+        sentences += [sentence]
 
-            mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
+        sentence = sentence.translate(str.maketrans('', '', string.punctuation)).strip().lower()
 
-            specter_encoded = specter_model.encode(mod_sentence)
-            bert_encoded = bert_model.encode(mod_sentence)
+        mod_sentence = re.sub(
+            "|".join(np.append(np.char.add(np.char.add(" ", np.array(stopwords.words("english"))), " "), ", ")), " ",
+            re.sub(" ", "  ", " " + sentence + " "))
 
-            sentences += [sentence]
-            specter_keywords += [
-                mod_sentence.split(" ")[round(specter_keras_model.predict(np.array([specter_encoded]))[0][0])]]
-            bert_keywords += [mod_sentence.split(" ")[round(bert_keras_model.predict(np.array([bert_encoded]))[0][0])]]
-            specter_classification_keywords += [mod_sentence.split(" ")[min(np.argmax(
-                specter_classification_keras_model.predict(np.array([specter_encoded]))[0]),
-                len(mod_sentence.split(" ")) - 1, )]]
-            bert_classification_keywords += [mod_sentence.split(" ")[min(np.argmax(
-                bert_classification_keras_model.predict(np.array([bert_encoded]))[0]),
-                len(mod_sentence.split(" ")) - 1, )]]
+        mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
 
-            tags = np.array(nltk.pos_tag(nltk.word_tokenize(sentence)))[:, 1]
-            dummies = pd.get_dummies(tags)
+        specter_encoded = specter_model.encode(mod_sentence)
+        bert_encoded = bert_model.encode(mod_sentence)
 
-            for i in possible_tags:
-                if i not in dummies.columns:
-                    dummies[i] = 0
+        specter_keywords += [
+            mod_sentence.split(" ")[round(specter_keras_model.predict(np.array([specter_encoded]))[0][0])]]
+        bert_keywords += [mod_sentence.split(" ")[round(bert_keras_model.predict(np.array([bert_encoded]))[0][0])]]
+        specter_classification_keywords += [mod_sentence.split(" ")[min(np.argmax(
+            specter_classification_keras_model.predict(np.array([specter_encoded]))[0]),
+            len(mod_sentence.split(" ")) - 1)]]
+        bert_classification_keywords += [mod_sentence.split(" ")[min(np.argmax(
+            bert_classification_keras_model.predict(np.array([bert_encoded]))[0]), len(mod_sentence.split(" ")) - 1)]]
 
-            dummies = dummies.reindex(sorted(dummies.columns), axis=1)
-            dummies = dummies.to_numpy()
-            dummies = np.vstack((dummies, np.zeros((200 - dummies.shape[0], len(possible_tags)))))
+        if np.array(nltk.pos_tag(nltk.word_tokenize(sentence))).shape[0] == 0:
+            continue
 
-            pos_keywords += [sentence.split(" ")[min(np.argmax(pos_keras_model.predict(np.array([dummies]))[0]),
-                                                     len(sentence.split(" ")) - 1, )]]
+        tags = np.array(nltk.pos_tag(nltk.word_tokenize(sentence)))[:, 1]
+        dummies = pd.get_dummies(tags)
 
-        merged = ""
-        for i in zip(sentences, specter_keywords, bert_keywords, specter_classification_keywords,
-                     bert_classification_keywords, pos_keywords):
-            merged += "sentence: " + i[0] + "\nspecter keyword: " + i[1] + "\nbert keyword: " + i[
-                2] + "\nspecter (classification) keyword: " + i[3] + "\nbert (classification) keyword: " + i[
-                          4] + "\npos tagging keyword: " + i[5] + "\n\n\n"
-    else:
-        is_classification = 'classification' in model_name
+        for i in possible_tags:
+            if i not in dummies.columns:
+                dummies[i] = 0
 
-        if 'allenai-specter' in model_name:
-            model = specter_model
-            keras_model = specter_classification_keras_model if is_classification else specter_keras_model
-        elif 'bert-base-nli-mean-tokens' in model_name:
-            model = bert_model
-            keras_model = bert_classification_keras_model if is_classification else bert_keras_model
-        else:
-            keras_model = pos_keras_model
+        dummies = dummies.reindex(sorted(dummies.columns), axis=1)
+        dummies = dummies.to_numpy()
+        dummies = np.vstack((dummies, np.zeros((200 - dummies.shape[0], len(possible_tags)))))
 
-        sentences = []
-        keywords = []
+        pos_keywords += [sentence.split(" ")[min(np.argmax(pos_keras_model.predict(np.array([dummies]))[0]),
+                                                 len(sentence.split(" ")) - 1)]]
 
-        for sentence in text.split('.'):
-            if sentence == "" or sentence.isspace() or sentence.strip().isnumeric():
-                continue
+    merged = ""
+    keywords = []
+    count = 1
+    for i in zip(sentences, specter_keywords, bert_keywords, specter_classification_keywords,
+                 bert_classification_keywords, pos_keywords):
+        scores = dict.fromkeys(i[1:], 0)
+        scores[i[1]] += 1
+        scores[i[2]] += 2
+        scores[i[3]] += 4.5
+        scores[i[4]] += 4.5
+        scores[i[5]] += 5
+        keyword = max(scores, key=lambda key: scores[key])
 
-            sentence = re.sub("\\((.*?)\\) ", " ", sentence).lower()
-            sentence = re.sub("\\[(.*?)\\] ", " ", sentence).lower()
-            sentence = re.sub("[-–—§!\"#$%&'()*+./:;<=>?@[\\]^_`{|}~,‘’…]+", "", sentence).strip()
+        sentence_words = i[0].split(" ")
+        sentence_words = [x for x in sentence_words if x]
+        mod_sentence_words = i[0].translate(str.maketrans('', '', string.punctuation)).strip().split(" ")
+        indices = [i for i, x in enumerate(mod_sentence_words) if x.lower() == keyword]
 
-            if model_name != "part-of-speech tagging":
-                mod_sentence = re.sub("|".join(
-                    np.append(np.char.add(np.char.add(" ", np.array(stopwords.words("english"))), " "), ", ", )), " ",
-                    re.sub(" ", "  ", " " + sentence + " "), )
+        for a in indices:
+            keyword = sentence_words[a].translate(str.maketrans('', '', string.punctuation)).strip()
+            sentence_words[a] = "____________"
 
-                mod_sentence = re.sub("\\s{2,}", " ", mod_sentence).strip()
-                encoded = model.encode(mod_sentence)
+        merged += str(count) + ". " + " ".join(sentence_words) + ".\n\n"
+        keywords += [str(count) + ". " + keyword]
+        count += 1
 
-                sentences += [sentence]
-                keywords += [mod_sentence.split(" ")[min(np.argmax(keras_model.predict(np.array([encoded]))[0]),
-                                                         len(mod_sentence.split(" ")) - 1)]] if is_classification else [
-                    mod_sentence.split(" ")[round(keras_model.predict(np.array([encoded]))[0][0])]]
-            else:
-                tags = np.array(nltk.pos_tag(nltk.word_tokenize(sentence)))[:, 1]
-                dummies = pd.get_dummies(tags)
-
-                for i in possible_tags:
-                    if i not in dummies.columns:
-                        dummies[i] = 0
-
-                dummies = dummies.reindex(sorted(dummies.columns), axis=1)
-                dummies = dummies.to_numpy()
-                dummies = np.vstack((dummies, np.zeros((200 - dummies.shape[0], len(possible_tags)))))
-
-                sentences += [sentence]
-                keywords += [sentence.split(" ")[min(np.argmax(pos_keras_model.predict(np.array([dummies]))[0]),
-                                                     len(sentence.split(" ")) - 1)]]
-
-        merged = ""
-        for i in zip(sentences, keywords):
-            merged += "question: " + (" " + i[0] + " ").replace(" " + i[1] + " ",
-                                                                " " + "_" * 10 + " ") + "\nkeyword: " + i[1] + "\n\n\n"
-
-    return render_template("index.html", text=text, model=model_name, keywords=merged)
+    return render_template("index.html", text=text, questions=merged[:len(merged) - 2], answers="\n".join(keywords))
 
 
 @app.route('/', methods=['GET'])

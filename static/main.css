@@ -19,7 +19,7 @@ input {
   padding: 0.5rem 1.2rem;
   border-radius: 2px;
   font-size: 1rem;
-  min-width: 6rem;
+  min-width: 1rem;
 }
 
 textarea {
@@ -54,15 +54,6 @@ textarea:focus {
   background-color: #0078d422;
 }
 
-.all-button {
-    color: rgb(212, 124, 0);
-    background-color: #ffffff00;
-}
-
-.all-button:hover {
-  background-color: #d47c0022;
-}
-
 /* Main section */
 .main {
   box-sizing: border-box;
@@ -71,12 +62,18 @@ textarea:focus {
   align-items: center;
 }
 
-.main .title h3 {
+h3 {
   font-size: 2.3rem;
   font-weight: 300;
   margin: 0.8rem 0;
 }
 
+h4 {
+  font-size: 1.6rem;
+  font-weight: 200;
+  margin: 0.8rem 0;
+}
+
 .panel {
-  width: 60vw;
+  width: 50vw;
 }

@@ -7,23 +7,16 @@
         </div>
         <textarea class="field" form="form" name="text" placeholder="Enter some text…" rows="6"></textarea>
         <form action="/response" id="form" method="POST">
-            <input class="button" name="action" style="margin-top: 4px;" type="submit" value="allenai-specter">
-            <input class="button" name="action" style="margin-top: 4px;" type="submit"
-                   value="bert-base-nli-mean-tokens">
-            <input class="button" name="action" style="margin-top: 4px;" type="submit"
-                   value="allenai-specter (classification)">
-            <input class="button" name="action" style="margin-top: 4px;" type="submit"
-                   value="bert-base-nli-mean-tokens (classification)">
-            <input class="button" name="action" style="margin-top: 4px;" type="submit"
-                   value="part-of-speech tagging">
-            <input class="all-button" name="action" style="margin-top: 4px;" type="submit" value="compare all!">
+            <input class="button" style="margin-top: 4px;" type="submit" value="Submit!">
         </form>
         <div>
             {% if text %}
-            <h4>Text</h4>
+            <h4 style="margin-top: 48px;">Text</h4>
             <p>{{ text }}</p>
-            <h4>Keywords ({{ model }})</h4>
-            <p style="white-space: pre-wrap">{{ keywords }}</p>
+            <h4 style="margin-top: 48px;">Questions</h4>
+            <p style="white-space: pre-wrap">{{ questions }}</p>
+            <h4 style="margin-top: 48px;">Answers</h4>
+            <p style="white-space: pre-wrap">{{ answers }}</p>
             {% endif %}
         </div>
     </div>
