@@ -1,12 +1,12 @@
 {% extends "base.html" %} {% block content %}
 
 <div class="main">
-    <div class="title" style="margin-top: 64px; margin-bottom: 32px;">
-        <h3>Keyword Identifier</h3>
-    </div>
     <div class="panel">
-        <form action="/response" method="POST">
-            <input class="field" name="text" placeholder="Enter some text…">
+        <div class="title" style="margin-top: 96px; margin-bottom: 32px;">
+            <h3>Keyword Identifier</h3>
+        </div>
+        <textarea class="field" form="form" name="text" placeholder="Enter some text…" rows="6"></textarea>
+        <form action="/response" id="form" method="POST">
             <input class="button" name="action" style="margin-top: 4px;" type="submit" value="allenai-specter">
             <input class="button" name="action" style="margin-top: 4px;" type="submit"
                    value="bert-base-nli-mean-tokens">
@@ -16,16 +16,16 @@
                    value="bert-base-nli-mean-tokens (classification)">
             <input class="button" name="action" style="margin-top: 4px;" type="submit"
                    value="part-of-speech tagging">
-            <input class="all-button" name="action" type="submit" value="compare all!" style="margin-top: 4px;">
+            <input class="all-button" name="action" style="margin-top: 4px;" type="submit" value="compare all!">
         </form>
-    </div>
-    <div>
-        {% if text %}
-        <h4>Text</h4>
-        <p>{{ text }}</p>
-        <h4>Keywords ({{ model }})</h4>
-        <p style="white-space: pre-wrap">{{ keywords }}</p>
-        {% endif %}
+        <div>
+            {% if text %}
+            <h4>Text</h4>
+            <p>{{ text }}</p>
+            <h4>Keywords ({{ model }})</h4>
+            <p style="white-space: pre-wrap">{{ keywords }}</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

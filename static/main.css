@@ -22,6 +22,21 @@ input {
   min-width: 6rem;
 }
 
+textarea {
+  font-family: inherit;
+  text-align: left;
+  padding: 0.5rem 1.2rem;
+  border-radius: 2px;
+  font-size: 1rem;
+  width: 100%;
+  resize: none;
+  outline-color: rgb(0, 120, 212);
+}
+
+textarea:focus {
+  outline-color: rgb(0, 120, 212);
+}
+
 ::-webkit-input-placeholder {
   text-align: left;
 }
@@ -49,7 +64,6 @@ input {
 }
 
 /* Main section */
-
 .main {
   box-sizing: border-box;
   display: flex;
@@ -61,4 +75,8 @@ input {
   font-size: 2.3rem;
   font-weight: 300;
   margin: 0.8rem 0;
+}
+
+.panel {
+  width: 60vw;
 }
