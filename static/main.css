@@ -8,7 +8,7 @@ body {
 }
 
 ::selection {
-  background: #3a3b3c;
+  background: #4a4b4c;
 }
 
 textarea {
@@ -20,13 +20,9 @@ textarea {
   font-size: 1rem;
   width: 100%;
   resize: none;
-  background-color: #3a3b3c;
+  background-color: #2a2b2c;
   border-color: #ffffff00;
-}
-
-textarea:focus {
   outline: none;
-  outline-color: rgb(0, 120, 212);
 }
 
 textarea::placeholder {
@@ -68,7 +64,7 @@ textarea::placeholder {
   padding-left: 16px;
   margin-left: 32px;
   margin-right: 32px;
-  border-left: 4px solid #98c2eb;
+  border-left: 4px solid #57a5f2;
 }
 
 #what:hover {
@@ -91,14 +87,14 @@ h3 {
   font-size: 2.3rem;
   font-weight: 300;
   margin: 0.8rem 0;
-  color: #1182f2;
+  color: #57a5f2;
 }
 
 h4 {
   font-size: 1.6rem;
   font-weight: 200;
   margin: 0.8rem 0;
-  color: #1182f2;
+  color: #57a5f2;
 }
 
 p {
