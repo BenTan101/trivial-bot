@@ -92,9 +92,11 @@ def response():
         specter_encoded = specter_model.encode(mod_sentence)
         bert_encoded = bert_model.encode(mod_sentence)
 
-        specter_keywords += [
-            mod_sentence.split(" ")[round(specter_keras_model.predict(np.array([specter_encoded]))[0][0])]]
-        bert_keywords += [mod_sentence.split(" ")[round(bert_keras_model.predict(np.array([bert_encoded]))[0][0])]]
+        specter_keywords += [mod_sentence.split(" ")[
+                                 min(round(specter_keras_model.predict(np.array([specter_encoded]))[0][0]),
+                                     len(mod_sentence.split(" ")) - 1)]]
+        bert_keywords += [mod_sentence.split(" ")[min(round(bert_keras_model.predict(np.array([bert_encoded]))[0][0]),
+                                                      len(mod_sentence.split(" ")) - 1)]]
         specter_classification_keywords += [mod_sentence.split(" ")[min(np.argmax(
             specter_classification_keras_model.predict(np.array([specter_encoded]))[0]),
             len(mod_sentence.split(" ")) - 1)]]

@@ -3,12 +3,19 @@
 <div class="main">
     <div class="panel">
         <div class="title" style="margin-top: 96px; margin-bottom: 32px;">
-            <h3>Keyword Identifier</h3>
+            <h3>Trivial Bot</h3>
         </div>
         <textarea class="field" form="form" name="text" placeholder="Enter some text…" rows="6"></textarea>
-        <form action="/response" id="form" method="POST">
-            <input class="button" style="margin-top: 4px;" type="submit" value="Submit!">
-        </form>
+        <div style="display: inline-block;">
+            <form action="/response" id="form" method="POST" style="display: inline-block;">
+                <input class="button" style="margin-top: 4px;" type="submit" value="Submit!">
+            </form>
+            <button class="button" id="what" style="margin-top: 4px;" type="button">What's this?</button>
+            <p id="what-text" style="margin-top: 16px;">Welcome to Trivial Bot! Enter some text above — it can be a
+                sentence, a paragraph, or a few paragraphs — and then submit! Using natural language processing, quiz
+                questions based on the input text will be generated in just a few seconds.<br><br>This web
+                application was created by Lee I-Shiang and Leemen Chan, under the mentorship of Mr Claude Chua.</p>
+        </div>
         <div>
             {% if text %}
             <h4 style="margin-top: 48px;">Text</h4>
